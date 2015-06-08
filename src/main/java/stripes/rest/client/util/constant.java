@@ -10,5 +10,5 @@ public interface constant {
 	String DOWNLOAD_PATH = "%s/%s";
 	String AT_CLASS = "@class";
 	String AT_RID = "@rid";
-	String BField = "bField";
+	String BFIELD = "bField";
 }

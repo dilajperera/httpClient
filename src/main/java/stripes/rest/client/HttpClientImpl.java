@@ -25,8 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import stripes.rest.client.util.constant;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * 
@@ -55,19 +53,16 @@ public class HttpClientImpl implements HttpClient{
 			HashMap<String,Object> metaData = new HashMap<>();
 			metaData.put(constant.FILE_NAME,file.getName());
 			metaData.put(constant.AT_CLASS,clazz);
-			metaData.put(constant.BField,field);
-			
+			metaData.put(constant.BFIELD,field);
+
 			if(rid != null){
-				metaData.put(constant.AT_RID,rid);
+				metaData.put(constant.AT_RID,rid);	
 			}
 			
 			LOGGER.info("File to be uploaded : {} ",toJson(metaData));
-			
 			String  url = "http://localhost:8080/stripes/binarydata/upload";
-			//String  url = "http://dilaj.j.layershift.co.uk/fmanager/binarydata/upload";
-				
 			HttpPost method = new HttpPost(url);
-			
+
 			MultipartEntityBuilder builder = MultipartEntityBuilder.create();
 			builder.addTextBody(constant.DATA, toJson(metaData), ContentType.APPLICATION_FORM_URLENCODED);
 			builder.addBinaryBody(constant.FILE_BEAN, file);
@@ -84,52 +79,38 @@ public class HttpClientImpl implements HttpClient{
 		}
 	
 	}
-	
+
 	@Override
-	public void downloadFile(final String metaDetail) {
-		//http://dilaj.j.layershift.co.uk/fmanager
+	public void downloadFile(final String rid,final String field, final String downloadPath) {
+
 		String  url = "http://localhost:8080/stripes/binarydata/download";
-		//String  url = "http://dilaj.j.layershift.co.uk/fmanager/binarydata/download";
 		HttpPost method = new HttpPost(url);
 		
+		HashMap<String,Object> metaData = new HashMap<>();
+		metaData.put(constant.AT_RID,rid);
+		metaData.put(constant.BFIELD,field);
+		metaData.put(constant.FILE_PATH,field);
+		
 		MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-		builder.addTextBody(constant.DATA, metaDetail, ContentType.APPLICATION_FORM_URLENCODED);
+		builder.addTextBody(constant.DATA, toJson(metaData), ContentType.APPLICATION_FORM_URLENCODED);
 		HttpEntity entity =  builder.build();
 		method.setEntity(entity);
 
 		try {
-			CloseableHttpResponse response = httpclient.execute(method);
-			entity = response.getEntity();
 			
+			CloseableHttpResponse response = httpclient.execute(method);
+			entity = response.getEntity();	
 			HeaderElement[] hr = response.getFirstHeader(constant.CONTENT_DISPOSITION).getElements();
 			String fileName = hr[0].toString().split("=")[1];
-			String filePath = fromJson(metaDetail).get(constant.FILE_PATH).toString();
-			String downloadPath = String.format(constant.DOWNLOAD_PATH, filePath,fileName);
-			OutputStream outstream = new FileOutputStream(new File(downloadPath));
-			LOGGER.info("File to be downloaded : {} | Path ; {} ",fileName,downloadPath,filePath);
+			String _downloadPath = String.format(constant.DOWNLOAD_PATH, downloadPath,fileName);
+			
+			OutputStream outstream = new FileOutputStream(new File(_downloadPath));
+			LOGGER.info("File to be downloaded : {} | Path : {} ",fileName,_downloadPath);
 			entity.writeTo(outstream);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-	}
-
-	/**
-	 * convert string to a json node
-	 * @param data
-	 * @return
-	 */
-	private HashMap<String,Object> fromJson(final String data){	
-		
-		try {
-			ObjectMapper mapper = new ObjectMapper();
-			mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-			TypeReference<HashMap<String, Object>> typeRef = new TypeReference<HashMap<String, Object>>() {};
-			return mapper.readValue(data, typeRef);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}	
-		return null;
 	}
 	
 	/**
